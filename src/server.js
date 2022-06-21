@@ -5,12 +5,13 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const base64 = require('base-64');
 const { Sequelize, DataTypes } = require('sequelize');
-const { response } = require('express');
+const jwt = require('jsonwebtoken');
 
 // instantiate express with Singleton
 const app = express();
 
 const PORT = process.env.PORT || 3002
+const SECRET = process.env.API_SECRET || 'thisIsMySecret';
 
 // db connection initially just using sqlite
 // const sequelize = new Sequelize('sqlite::memory');
@@ -46,11 +47,26 @@ UsersModel.beforeCreate = (user) => {
   console.log(user)
 }
 
-async function basicAuth(req, res, next)  {
+UsersModel.authenticateBearer = async (token) => {
+  try {
+    let payload = jwt.verify(token, SECRET);
+    console.log(payload);
+    const user = await UsersModel.findOne({ where: { username: payload.username } });
+    if (user){
+      return user
+    }
+  } catch (e) {
+    console.error(e);
+    return e;
+  }
+}
+
+
+async function basicAuth(req, res, next) {
   // confirm that the headers has an "authorization" property
   let { authorization } = req.headers;
   console.log(authorization) //Basic dGVzdGVyOnBhc3MxMjM=
-  if (!authorization){
+  if (!authorization) {
     res.status(401).send('Not Authorized');
   } else {
     // get rid of 'Basic '
@@ -60,15 +76,15 @@ async function basicAuth(req, res, next)  {
     let decodedAuthStr = base64.decode(authStr);
     console.log('decodedAuthStr:', decodedAuthStr); //tester:pass123
 
-    let [ username, password ] = decodedAuthStr.split(':');
+    let [username, password] = decodedAuthStr.split(':');
     console.log('username:', username);
     console.log('password:', password);
 
-    let user = await UsersModel.findOne({where: {username}});
+    let user = await UsersModel.findOne({ where: { username } });
 
-    if (user){
+    if (user) {
       let validUser = await bcrypt.compare(password, user.password);
-      if (validUser){
+      if (validUser) {
         // previously req.user did not exist.  
         // if user is authenticated, let add it
         req.user = user
@@ -78,6 +94,27 @@ async function basicAuth(req, res, next)  {
       }
     }
   }
+}
+
+async function bearerAuth(req, res, next) {
+  if (!req.headers.authorization) {
+    next('Invalid Login');
+  } else {
+   try {
+     let token = req.headers.authorization.split(' ').pop();
+
+    let validUser = UsersModel.authenticateBearer(token)
+    if (validUser){
+      req.user = validUser
+      next();
+    }
+  } catch(e) {
+    console.error(e);
+    return error;
+  }
+    
+  }
+
 }
 
 app.post('/signup', async (req, res, next) => {
@@ -96,6 +133,16 @@ app.get('/hello', basicAuth, (req, res, next) => {
   let { name } = req.query;
   console.log('auth proof', req.user.username)
   res.status(200).send(`Greetings ${name}! this route is now secured by Basic AUth!!!`)
+})
+
+app.get('/users', bearerAuth, async (req, res, next) => {
+  console.log(req.user);
+  let users = await UsersModel.findAll({});
+  let payload = {
+    results: users,
+    token: req.user.token,
+  };
+  res.send(payload);
 })
 
 module.exports = {
