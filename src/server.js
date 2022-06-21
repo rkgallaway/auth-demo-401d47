@@ -4,7 +4,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const base64 = require('base-64');
-const { Sequelize, DataTypes } = require('sequelize');
+const { Sequelize, DataTypes, json } = require('sequelize');
 const jwt = require('jsonwebtoken');
 
 // instantiate express with Singleton
@@ -39,6 +39,15 @@ const UsersModel = sequelize.define('Users', {
   password: {
     type: DataTypes.STRING,
     allowNull: false,
+  },
+  token: {
+    type: DataTypes.VIRTUAL,
+    get(){
+      return jwt.sign({username: this.username}, SECRET, { expiresIn: '86400000'})
+    }, // a method that gets called on read
+    set(payload){
+      return jwt.sign(payload, SECRET, { expiresIn: '86400000'})
+    }, // a method that runs when set with "="
   }
 })
 
@@ -101,6 +110,10 @@ async function bearerAuth(req, res, next) {
     next('Invalid Login');
   } else {
    try {
+    //  this leaves us with tthe token: remember the string: 
+    // 'Bearer ${token}` 
+    // split at the space, this is an array with two strings
+    // popping off the end item returns that end item and assigns it to the appropriately named variable token
      let token = req.headers.authorization.split(' ').pop();
 
     let validUser = UsersModel.authenticateBearer(token)
