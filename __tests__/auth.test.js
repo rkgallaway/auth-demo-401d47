@@ -1,7 +1,7 @@
 'use strict';
 
-const { server, sequelize } = require('../src/server.js');
-const base64 = require('base-64');
+const { server } = require('../src/server.js');
+const { sequelize } = require('../src/models');
 const supertest = require('supertest');
 const mockRequest = supertest(server);
 
@@ -20,7 +20,7 @@ describe('Auth Tests', () => {
     // create mockResponse
     let response = await mockRequest.post('/signup').send({
       username: 'tester',
-      password: 'pass123'
+      password: 'pass123',
     });
 
     console.log('Response Body', response.body);
