@@ -4,14 +4,14 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const base64 = require('base-64');
-const { Sequelize, DataTypes, json } = require('sequelize');
+const { Sequelize, DataTypes } = require('sequelize');
 const jwt = require('jsonwebtoken');
 
 // instantiate express with Singleton
 const app = express();
 
 const PORT = process.env.PORT || 3002
-const SECRET = process.env.API_SECRET || 'thisIsMySecret';
+const SECRET = process.env.API_SECRET || 'ThisIsMySecret';
 
 // db connection initially just using sqlite
 // const sequelize = new Sequelize('sqlite::memory');
@@ -161,5 +161,6 @@ app.get('/users', bearerAuth, async (req, res, next) => {
 module.exports = {
   server: app,
   start: () => app.listen(PORT, console.log('server running on', PORT)),
-  sequelize
+  sequelize,
+  UsersModel
 }
