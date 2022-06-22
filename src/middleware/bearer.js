@@ -8,9 +8,15 @@ module.exports = async (req, res, next) => {
   } else {
     try {
       let token = req.headers.authorization.split(' ').pop();
-      let validUser = Users.authenticateBearer(token);
+      console.log('bearer middleware', token);
+      let validUser = await Users.authenticateBearer(token);
       if (validUser){
+
+        console.log('successful token verification');
+
         req.user = validUser;
+
+        console.log('am i valid', validUser);
         next();
       }
     } catch(e) {
