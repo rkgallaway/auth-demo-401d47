@@ -1,8 +1,7 @@
 'use strict';
 
-const { UsersModel, sequelize } = require('../src/server');
 const jwt = require('jsonwebtoken');
-
+const { Users, sequelize } = require('../src/models');
 const SECRET = process.env.API_SECRET || 'ThisIsMySecret';
 
 beforeAll (async () => {
@@ -17,12 +16,11 @@ afterAll (async () => {
 
 describe('UsersModel Tests', () => {
   test('User should have a token', async () => {
-    const testUser = await UsersModel.create({username: 'Ryan', password: 'pass123'});
-    console.log()
+    const testUser = await Users.create({username: 'Ryan', password: 'pass123'});
     const { token } = testUser;
     const validToken = jwt.verify(testUser.token , SECRET);
 
     expect(token).toBeTruthy();
     expect(validToken).toBeTruthy();
-  })
-})
+  });
+});
